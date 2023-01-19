@@ -1,15 +1,8 @@
 import { StatusBar } from "expo-status-bar";
-import {
-  StyleSheet,
-  Text,
-  View,
-  FlatList,
-  ListRenderItemInfo,
-} from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import ConnectToBluetoothText from "./components/ConnectToBluetoothText/ConnectToBluetoothText";
-import SelectableCard from "./components/ConnectToBluetoothText/SelectableCard/SelectableCard";
-import cardData from "./data/index";
-import SelectableCardData from "./interfaces/SelectableCardData";
+import SelectableCardList from "./components/SelectableCardList";
+
 export default function App() {
   const skipBluetooth = true;
 
@@ -21,14 +14,7 @@ export default function App() {
         </View>
 
         <View style={{ flex: 16 }}>
-          <FlatList
-            data={cardData}
-            renderItem={({ item }: ListRenderItemInfo<SelectableCardData>) => (
-              <SelectableCard data={item} />
-            )}
-            keyExtractor={(item) => item.id}
-            style={styles.scrollableCards}
-          />
+          <SelectableCardList />
         </View>
       </View>
     );
@@ -75,8 +61,5 @@ const styles = StyleSheet.create({
   headerText: {
     color: "#fff",
     fontSize: 30,
-  },
-  scrollableCards: {
-    backgroundColor: "#fff",
   },
 });

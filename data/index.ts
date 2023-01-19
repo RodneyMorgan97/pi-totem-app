@@ -11,5 +11,11 @@ const data: SelectableCardData[] = [
     cardTitle: "Testing file B",
     id: "1",
   },
+  {
+    imagePath: require("./C_sm.png"),
+    cardTitle:
+      "Actually a pretty long description is being used here for File C",
+    id: "2",
+  },
 ];
 export default data;

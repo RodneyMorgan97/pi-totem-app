@@ -1,5 +1,7 @@
+import { ImageSourcePropType } from "react-native";
+
 export default interface SelectableCardData {
-  imagePath: string;
+  imagePath: ImageSourcePropType;
   cardTitle: string;
-  selected: boolean;
+  id: string;
 }
