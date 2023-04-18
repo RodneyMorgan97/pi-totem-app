@@ -1,13 +1,34 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, FlatList, ListRenderItemInfo } from "react-native";
+import { io } from "socket.io-client";
 
-import SelectableCard from "../../components/ConnectToBluetoothText/SelectableCard";
+import SelectableCard from "../SelectableCard";
 import cardData from "../../data/index";
 import SelectableCardData from "../../interfaces/SelectableCardData";
 
 export default function SelectableCardList() {
-  // only one card can be selected at a time, so this keeps track of the ID of the last selected card
   const [selectedCardID, setSelectedCardID] = useState<string | undefined>();
+  const [socket, setSocket] = useState<any>(null);
+
+  useEffect(() => {
+    const newSocket = io("http://192.168.4.1:3000", {
+      path: "/api/socket",
+    });
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
+  }, []);
+
+  const handleSelection = (id: string) => {
+    setSelectedCardID(id);
+
+    // Send the selected card's ID to the server
+    if (socket) {
+      socket.emit("toggle-image", { imageName: id });
+    }
+  };
 
   return (
     <FlatList
@@ -15,7 +36,7 @@ export default function SelectableCardList() {
       renderItem={({ item }: ListRenderItemInfo<SelectableCardData>) => (
         <SelectableCard
           data={item}
-          setSelected={setSelectedCardID}
+          setSelected={handleSelection}
           isSelected={item.id === selectedCardID}
         />
       )}
