@@ -1,9 +1,8 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import ConnectionText from "./components/ConnectionNotice/ConnectionText";
+import ConnectionText from "./components/ConnectionNotice";
 import SelectableCardList from "./components/SelectableCardList";
-import { io } from "socket.io-client";
 import NetInfo from "@react-native-community/netinfo";
 
 export default function App() {
