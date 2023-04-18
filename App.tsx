@@ -1,10 +1,36 @@
 import { StatusBar } from "expo-status-bar";
+import { useState, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import ConnectToBluetoothText from "./components/ConnectToBluetoothText/ConnectToBluetoothText";
+import ConnectionText from "./components/ConnectionNotice/ConnectionText";
 import SelectableCardList from "./components/SelectableCardList";
+import { io } from "socket.io-client";
+import NetInfo from "@react-native-community/netinfo";
 
 export default function App() {
-  const skipBluetooth = true;
+  const skipWifiConnection = true; // DEV Flag - remove before production
+  const [isConnectedToTotem, setIsConnectedToTotem] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(checkWifiConnection);
+    checkWifiConnection();
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  const checkWifiConnection = () => {
+    NetInfo.fetch().then((state) => {
+      if (
+        state.isConnected &&
+        state.type === "wifi" &&
+        state.details.ssid === "TOTEM"
+      ) {
+        setIsConnectedToTotem(true);
+      } else {
+        setIsConnectedToTotem(false);
+      }
+    });
+  };
 
   const MainPage = () => {
     return (
@@ -23,14 +49,17 @@ export default function App() {
   const ConnectPage = () => {
     return (
       <View style={styles.container}>
-        <ConnectToBluetoothText />
+        <ConnectionText />
       </View>
     );
   };
 
   const choosePageToShow = () => {
-    return skipBluetooth ? MainPage() : ConnectPage();
+    return skipWifiConnection || isConnectedToTotem
+      ? MainPage()
+      : ConnectPage();
   };
+
   return (
     <View style={styles.container}>
       {choosePageToShow()}

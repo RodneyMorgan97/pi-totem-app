@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
-import SelectableCardData from "../../../interfaces/SelectableCardData";
+import SelectableCardData from "../../interfaces/SelectableCardData";
 
 interface Props {
   data: SelectableCardData;
