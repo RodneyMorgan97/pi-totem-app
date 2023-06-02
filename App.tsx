@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import ConnectionText from "./components/ConnectionNotice";
 import SelectableCardList from "./components/SelectableCardList";
 import NetInfo from "@react-native-community/netinfo";
+import UploadImageButton from "./components/UploadImageButton/UploadImageButton";
 
 export default function App() {
   const skipWifiConnection = true; // DEV Flag - remove before production
@@ -20,13 +21,17 @@ export default function App() {
   const checkWifiConnection = () => {
     NetInfo.fetch().then((state) => {
       if (
-        state.isConnected &&
-        state.type === "wifi" &&
-        state.details.ssid === "TOTEM"
+        state.isConnected
+        // &&
+        // state.type === "wifi" &&
+        // state.details.ssid === "TOTEM"
+        // state.details.ssid === "FBI Van #2"
       ) {
         setIsConnectedToTotem(true);
+        console.log("connected to totem wifi");
       } else {
         setIsConnectedToTotem(false);
+        console.log("not connected to totem wifi");
       }
     });
   };
@@ -41,6 +46,7 @@ export default function App() {
         <View style={{ flex: 16 }}>
           <SelectableCardList />
         </View>
+        <UploadImageButton />
       </View>
     );
   };

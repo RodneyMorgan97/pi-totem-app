@@ -1,3 +1,6 @@
+// SelectableCard.tsx
+
+import React from "react";
 import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
 import SelectableCardData from "../../interfaces/SelectableCardData";
 
@@ -43,12 +46,12 @@ export default function SelectableCard(props: Props) {
       }}
     >
       <Image
-        source={props.data.imagePath}
+        source={{ uri: props.data.image }}
         style={styles.imageStyle}
         resizeMode="contain"
       />
       <Text style={styles.title} textBreakStrategy="simple">
-        {props.data.cardTitle}
+        {props.data.name}
       </Text>
     </TouchableOpacity>
   );
