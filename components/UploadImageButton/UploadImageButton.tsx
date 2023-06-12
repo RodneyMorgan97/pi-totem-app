@@ -9,15 +9,20 @@ import {
   Modal,
   SafeAreaView,
   Dimensions,
+  Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
+import { Ionicons } from "@expo/vector-icons";
 
-const SERVER_URL = "http://192.168.86.249:3000";
+const SERVER_URL = "http://192.168.86.26:3000";
 // const SERVER_URL = "http://192.168.4.1:3000"; // raspberry pi static ip address
 
-const UploadImageButton = () => {
+interface UploadImageButtonProps {
+  onUploadSuccess: () => void;
+}
+
+const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
   const [imageName, setImageName] = useState("");
   const [selectedImage, setSelectedImage] =
     useState<ImagePicker.ImagePickerSuccessResult | null>(null);
@@ -44,31 +49,98 @@ const UploadImageButton = () => {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
+      base64: true,
     });
 
     if (!result.canceled) {
-      const filename =
-        result.assets[0].uri.split("/").pop() || result.assets[0].uri;
-
       // calculate the scaled dimensions
       const { width, height } = result.assets[0];
-      const scaleFactor = 0.75;
+      const maxHeight = Dimensions.get("window").height * 0.8; // 80% of screen height
+      const scaleFactor = maxHeight / height;
       const scaledWidth = width * scaleFactor;
-      const scaledHeight = height * scaleFactor;
+      const scaledHeight = maxHeight;
 
       setImageDimensions({ width: scaledWidth, height: scaledHeight });
-      setImageName(filename);
       setSelectedImage(result);
       setModalVisible(true);
     }
   };
 
+  const uploadFile = async (
+    uri: string,
+    fileName: string,
+    fileType: string
+  ) => {
+    try {
+      let response;
+      if (Platform.OS === "web") {
+        let formData = new FormData();
+        const responseFetch = await fetch(uri);
+        const blob = await responseFetch.blob();
+        formData.append(`${fileName}.${fileType}`, blob);
+        response = await fetch(`${SERVER_URL}/api/upload`, {
+          method: "POST",
+          body: formData,
+        });
+        return await response.json(); // parse response to JSON for web
+      } else {
+        response = (await FileSystem.uploadAsync(
+          `${SERVER_URL}/api/upload`,
+          uri,
+          {
+            fieldName: `${fileName}.${fileType}`,
+            httpMethod: "POST",
+            uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+          }
+        )) as any;
+        return JSON.parse(response.body); // parse response to JSON for mobile
+      }
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };
+
   const onUpload = async () => {
-    if (imageName) {
-      // Implement upload logic here
-      setModalVisible(false);
-      setSelectedImage(null);
-      setImageName("");
+    if (!imageName || !selectedImage) {
+      alert("Please enter an image name and select an image.");
+      return;
+    }
+
+    try {
+      const fileName = sanitizeFilename(imageName);
+      let fileType: string;
+      if (Platform.OS === "web") {
+        const response = await fetch(selectedImage.assets[0].uri);
+        const blob = await response.blob();
+        fileType = blob.type.split("/")[1];
+      } else {
+        fileType = String(selectedImage.assets[0].uri.split(".").pop());
+      }
+
+      const data = await uploadFile(
+        selectedImage.assets[0].uri,
+        fileName,
+        fileType
+      );
+
+      if (data.error === "A file with this name already exists") {
+        alert(
+          "A file with this name already exists. Please choose a different name."
+        );
+      } else if (data.message === "Upload successful") {
+        alert("Image uploaded successfully!");
+        setModalVisible(false);
+        setSelectedImage(null);
+        setImageName("");
+        onUploadSuccess
+          ? onUploadSuccess()
+          : console.error("onUploadSuccess function is not provided!");
+      } else {
+        alert("Image upload failed!");
+      }
+    } catch (error) {
+      alert(`Upload failed with error: ${error}`);
     }
   };
 
@@ -117,6 +189,11 @@ const UploadImageButton = () => {
   );
 };
 
+// Utility function to sanitize filenames
+const sanitizeFilename = (filename: string) => {
+  return filename.replace(/[\/\\?%*:|"<>]/g, "-");
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -136,6 +213,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   image: {
+    paddingTop: 20,
     marginBottom: 20,
   },
   input: {
@@ -144,6 +222,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 10,
     paddingLeft: 10,
+    backgroundColor: "white",
   },
   modalContainer: {
     flex: 1,

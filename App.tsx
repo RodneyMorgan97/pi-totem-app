@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import ConnectionText from "./components/ConnectionNotice";
 import SelectableCardList from "./components/SelectableCardList";
 import NetInfo from "@react-native-community/netinfo";
-import UploadImageButton from "./components/UploadImageButton/UploadImageButton";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function App() {
   const skipWifiConnection = true; // DEV Flag - remove before production
@@ -40,13 +40,12 @@ export default function App() {
     return (
       <View style={styles.mainPageContainer}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Pi Totem: Bonnaroo 2023</Text>
+          <Text style={styles.headerText}>Pi Totem - Bonnaroo 2023</Text>
         </View>
 
         <View style={{ flex: 16 }}>
           <SelectableCardList />
         </View>
-        <UploadImageButton />
       </View>
     );
   };
@@ -65,11 +64,18 @@ export default function App() {
       : ConnectPage();
   };
 
+  const gradientColors = ["#79C031", "#7EBAB7", "#7A5FB7", "#F2788B"];
+
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={gradientColors}
+      start={[0, 0]}
+      end={[0, 1]}
+      style={styles.container}
+    >
       {choosePageToShow()}
       <StatusBar style="dark" />
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -93,7 +99,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerText: {
-    color: "#fff",
+    color: "#79C130",
     fontSize: 30,
   },
 });
