@@ -17,8 +17,8 @@ export default function App() {
     DefaultEventsMap
   > | null>(null);
 
-  const ip = "http://192.168.86.25:3000";
-  // const ip = "http://192.168.4.1:3000"; // raspberry pi static ip address
+  // const ip = "http://192.168.86.25:3000";
+  const ip = "http://192.168.4.1:3000"; // raspberry pi static ip address
 
   useEffect(() => {
     connectToSocket();
