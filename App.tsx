@@ -1,67 +1,88 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import ConnectionText from "./components/ConnectionNotice";
-import SelectableCardList from "./components/SelectableCardList";
-import NetInfo from "@react-native-community/netinfo";
 import { LinearGradient } from "expo-linear-gradient";
+import ConnectionNotice from "./components/ConnectionNotice";
+import ConnectionStatus from "./components/ConnectionStatus";
+import SelectableCardList from "./components/SelectableCardList";
+import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
+import { DefaultEventsMap } from "@socket.io/component-emitter";
+import BackgroundToggle from "./components/BackgroundToggle";
 
 export default function App() {
-  const skipWifiConnection = true; // DEV Flag - remove before production
-  const [isConnectedToTotem, setIsConnectedToTotem] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [socket, setSocket] = useState<Socket<
+    DefaultEventsMap,
+    DefaultEventsMap
+  > | null>(null);
+
+  const ip = "http://192.168.86.25:3000";
+  // const ip = "http://192.168.4.1:3000"; // raspberry pi static ip address
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(checkWifiConnection);
-    checkWifiConnection();
-    return () => {
-      unsubscribe();
-    };
+    connectToSocket();
   }, []);
 
-  const checkWifiConnection = () => {
-    NetInfo.fetch().then((state) => {
-      if (
-        state.isConnected
-        // &&
-        // state.type === "wifi" &&
-        // state.details.ssid === "TOTEM"
-        // state.details.ssid === "FBI Van #2"
-      ) {
-        setIsConnectedToTotem(true);
-        console.log("connected to totem wifi");
-      } else {
-        setIsConnectedToTotem(false);
-        console.log("not connected to totem wifi");
-      }
+  const connectToSocket = () => {
+    const newSocket = io(`${ip}`, {
+      path: "/api/socket",
     });
+
+    // Handling connect event
+    newSocket.on("connect", () => {
+      console.log("Connected to the socket server");
+      setIsConnected(true);
+    });
+
+    // Handling disconnect event
+    newSocket.on("disconnect", () => {
+      console.log("Disconnected from the socket server");
+      setIsConnected(false);
+    });
+
+    setSocket(newSocket);
+    return () => {
+      setIsConnected(false);
+      newSocket.off("connect");
+      newSocket.off("disconnect");
+      newSocket.disconnect();
+    };
   };
 
   const MainPage = () => {
     return (
       <View style={styles.mainPageContainer}>
         <View style={styles.headerContainer}>
+          <View style={styles.connectionStatus}>
+            <ConnectionStatus isConnected={isConnected} />
+          </View>
           <Text style={styles.headerText}>Pi Totem - Bonnaroo 2023</Text>
         </View>
 
         <View style={{ flex: 16 }}>
-          <SelectableCardList />
+          {isConnected && socket ? (
+            <View style={{ flex: 1 }}>
+              <View style={{ flex: 2, paddingBottom: 5 }}>
+                <SelectableCardList socket={socket} serverIP={ip} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <BackgroundToggle socket={socket} serverIP={ip} />
+              </View>
+            </View>
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+              }}
+            >
+              <ConnectionNotice />
+            </View>
+          )}
         </View>
       </View>
     );
-  };
-
-  const ConnectPage = () => {
-    return (
-      <View style={styles.container}>
-        <ConnectionText />
-      </View>
-    );
-  };
-
-  const choosePageToShow = () => {
-    return skipWifiConnection || isConnectedToTotem
-      ? MainPage()
-      : ConnectPage();
   };
 
   const gradientColors = ["#79C031", "#7EBAB7", "#7A5FB7", "#F2788B"];
@@ -73,7 +94,7 @@ export default function App() {
       end={[0, 1]}
       style={styles.container}
     >
-      {choosePageToShow()}
+      {MainPage()}
       <StatusBar style="dark" />
     </LinearGradient>
   );
@@ -87,6 +108,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  connectionStatus: {
+    position: "absolute",
+    left: 5,
+  },
   mainPageContainer: {
     flex: 1,
     flexDirection: "column",
@@ -97,6 +122,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
   },
   headerText: {
     color: "#79C130",

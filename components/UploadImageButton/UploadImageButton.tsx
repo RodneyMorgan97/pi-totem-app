@@ -15,7 +15,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Ionicons } from "@expo/vector-icons";
 
-const SERVER_URL = "http://192.168.86.26:3000";
+const SERVER_URL = "http://192.168.86.25:3000";
 // const SERVER_URL = "http://192.168.4.1:3000"; // raspberry pi static ip address
 
 interface UploadImageButtonProps {
@@ -46,7 +46,7 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 1,
       base64: true,
@@ -54,11 +54,22 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
 
     if (!result.canceled) {
       // calculate the scaled dimensions
+      // calculate the scaled dimensions
       const { width, height } = result.assets[0];
+      const maxWidth = Dimensions.get("window").width; // Screen width
       const maxHeight = Dimensions.get("window").height * 0.8; // 80% of screen height
-      const scaleFactor = maxHeight / height;
-      const scaledWidth = width * scaleFactor;
-      const scaledHeight = maxHeight;
+
+      // Determine whether to scale based on height or width
+      let scaleFactor, scaledWidth, scaledHeight;
+      if (width / height > maxWidth / maxHeight) {
+        // Image is wider, scale to fit width
+        scaleFactor = maxWidth / width;
+      } else {
+        // Image is taller, scale to fit height
+        scaleFactor = maxHeight / height;
+      }
+      scaledWidth = width * scaleFactor;
+      scaledHeight = height * scaleFactor;
 
       setImageDimensions({ width: scaledWidth, height: scaledHeight });
       setSelectedImage(result);
@@ -158,12 +169,6 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
       <Modal animationType="slide" visible={modalVisible} transparent={true}>
         <SafeAreaView style={styles.modalContainer}>
           {selectedImage && (
-            <Image
-              source={{ uri: selectedImage.assets[0].uri }}
-              style={{ ...styles.image, ...imageDimensions }}
-            />
-          )}
-          {selectedImage && (
             <TextInput
               style={styles.input}
               onChangeText={(text) => setImageName(text)}
@@ -183,6 +188,12 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
               </TouchableOpacity>
             )}
           </View>
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage.assets[0].uri }}
+              style={{ ...styles.image, ...imageDimensions }}
+            />
+          )}
         </SafeAreaView>
       </Modal>
     </View>
@@ -221,7 +232,10 @@ const styles = StyleSheet.create({
     borderColor: "gray",
     borderWidth: 1,
     marginTop: 10,
+    marginBottom: 5,
     paddingLeft: 10,
+    borderRadius: 30,
+    width: "60%",
     backgroundColor: "white",
   },
   modalContainer: {
@@ -235,6 +249,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     width: "50%",
     alignSelf: "center",
+    marginBottom: 20,
   },
   uploadButton: {
     padding: 10,

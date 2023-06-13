@@ -6,47 +6,23 @@ import {
   View,
   RefreshControl,
 } from "react-native";
-import { io } from "socket.io-client";
-
+import type { Socket } from "socket.io-client";
+import { DefaultEventsMap } from "@socket.io/component-emitter";
 import SelectableCard from "../SelectableCard";
 import SelectableCardData from "../../interfaces/SelectableCardData";
 import UploadImageButton from "../UploadImageButton/UploadImageButton";
 
-export default function SelectableCardList() {
+interface Props {
+  socket: Socket<DefaultEventsMap, DefaultEventsMap>;
+  serverIP: string;
+}
+export default function SelectableCardList(props: Props) {
   const [selectedCardID, setSelectedCardID] = useState<string | undefined>();
-  const [socket, setSocket] = useState<any>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
   const [cardData, setCardData] = useState<SelectableCardData[]>([]);
-  const [imageCount, setImageCount] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const ip = "http://192.168.86.26:3000";
-  // const ip = "http://192.168.4.1:3000"; // raspberry pi static ip address
-
   useEffect(() => {
-    const newSocket = io(`${ip}`, {
-      path: "/api/socket",
-    });
-
-    // Handling connect event
-    newSocket.on("connect", () => {
-      console.log("Connected to the socket server");
-      setIsConnected(true);
-    });
-
-    // Handling disconnect event
-    newSocket.on("disconnect", () => {
-      console.log("Disconnected from the socket server");
-      setIsConnected(false);
-    });
-
-    setSocket(newSocket);
     getImageCount();
-    return () => {
-      newSocket.off("connect");
-      newSocket.off("disconnect");
-      newSocket.close();
-    };
   }, []);
 
   const onRefresh = React.useCallback(() => {
@@ -57,10 +33,8 @@ export default function SelectableCardList() {
 
   const getImageCount = async () => {
     try {
-      const res = await fetch(`${ip}/api/getImageCount`);
+      const res = await fetch(`${props.serverIP}/api/getImageCount`);
       const data = await res.json();
-      setImageCount(data.count);
-
       initializePlaceholders(data.count);
 
       for (let i = 0; i < data.count; i++) {
@@ -83,7 +57,7 @@ export default function SelectableCardList() {
 
   const fetchImage = async (index: number) => {
     try {
-      const res = await fetch(`${ip}/api/fetchImage?page=${index}`);
+      const res = await fetch(`${props.serverIP}/api/fetchImage?page=${index}`);
       const data = await res.json();
       setCardData((prevState) => {
         const newCardData = [...prevState];
@@ -114,15 +88,15 @@ export default function SelectableCardList() {
       }) || null;
 
     // Send the selected card's ID to the server
-    if (socket && isConnected && validObject) {
-      socket.emit("toggle-image", { imageName: validObject.name });
+    if (validObject) {
+      props.socket.emit("toggle-image", { imageName: validObject.name });
     } else {
       console.log("Socket is not connected");
     }
   };
 
   const deleteImage = async (filename: string) => {
-    fetch(`${ip}/api/delete`, {
+    fetch(`${props.serverIP}/api/delete`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
