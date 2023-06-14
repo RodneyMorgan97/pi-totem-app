@@ -15,19 +15,17 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Ionicons } from "@expo/vector-icons";
 
-const SERVER_URL = "http://192.168.86.25:3000";
-// const SERVER_URL = "http://192.168.4.1:3000"; // raspberry pi static ip address
-
 interface UploadImageButtonProps {
   onUploadSuccess: () => void;
+  serverIP: string;
 }
 
-const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
+const UploadImageButton = (props: UploadImageButtonProps) => {
   const [imageName, setImageName] = useState("");
   const [selectedImage, setSelectedImage] =
     useState<ImagePicker.ImagePickerSuccessResult | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [isUploadLoading, setIsUploadLoading] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({
     width: 0,
     height: 0,
@@ -53,7 +51,6 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
     });
 
     if (!result.canceled) {
-      // calculate the scaled dimensions
       // calculate the scaled dimensions
       const { width, height } = result.assets[0];
       const maxWidth = Dimensions.get("window").width; // Screen width
@@ -89,14 +86,14 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
         const responseFetch = await fetch(uri);
         const blob = await responseFetch.blob();
         formData.append(`${fileName}.${fileType}`, blob);
-        response = await fetch(`${SERVER_URL}/api/upload`, {
+        response = await fetch(`${props.serverIP}/api/upload`, {
           method: "POST",
           body: formData,
         });
         return await response.json(); // parse response to JSON for web
       } else {
         response = (await FileSystem.uploadAsync(
-          `${SERVER_URL}/api/upload`,
+          `${props.serverIP}/api/upload`,
           uri,
           {
             fieldName: `${fileName}.${fileType}`,
@@ -117,6 +114,8 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
       alert("Please enter an image name and select an image.");
       return;
     }
+
+    setIsUploadLoading(true);
 
     try {
       const fileName = sanitizeFilename(imageName);
@@ -144,8 +143,8 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
         setModalVisible(false);
         setSelectedImage(null);
         setImageName("");
-        onUploadSuccess
-          ? onUploadSuccess()
+        props.onUploadSuccess
+          ? props.onUploadSuccess()
           : console.error("onUploadSuccess function is not provided!");
       } else {
         alert("Image upload failed!");
@@ -153,6 +152,7 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
     } catch (error) {
       alert(`Upload failed with error: ${error}`);
     }
+    setIsUploadLoading(false);
   };
 
   const onCancel = () => {
@@ -179,7 +179,9 @@ const UploadImageButton = ({ onUploadSuccess }: UploadImageButtonProps) => {
           <View style={styles.buttonContainer}>
             {selectedImage && (
               <TouchableOpacity onPress={onUpload} style={styles.uploadButton}>
-                <Text style={styles.buttonText}>Upload</Text>
+                <Text style={styles.buttonText}>
+                  {isUploadLoading ? "Loading" : "Upload"}
+                </Text>
               </TouchableOpacity>
             )}
             {selectedImage && (

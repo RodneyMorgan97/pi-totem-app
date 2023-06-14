@@ -10,7 +10,7 @@ import type { Socket } from "socket.io-client";
 import { DefaultEventsMap } from "@socket.io/component-emitter";
 import SelectableCard from "../SelectableCard";
 import SelectableCardData from "../../interfaces/SelectableCardData";
-import UploadImageButton from "../UploadImageButton/UploadImageButton";
+import UploadImageButton from "../UploadImageButton";
 
 interface Props {
   socket: Socket<DefaultEventsMap, DefaultEventsMap>;
@@ -144,7 +144,10 @@ export default function SelectableCardList(props: Props) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       />
-      <UploadImageButton onUploadSuccess={onUploadSuccess} />
+      <UploadImageButton
+        serverIP={props.serverIP}
+        onUploadSuccess={onUploadSuccess}
+      />
     </View>
   );
 }
